@@ -2,8 +2,8 @@ var TableTop = require('tabletop-boardgames');
 var inherits = require('util').inherits;
 
 
-function TicTacToeGame(players, board) {
-  TableTop.Game.call(this, players, board);
+function TicTacToeGame(board) {
+  TableTop.Game.call(this, board);
   this.currentPlayer = 0;
   this.moveType = TableTop.Constants.moveTypePlaceToken;
   this.moveEvaluationType = TableTop.Constants.moveEvalationTypeGameEvaluator;
