@@ -1,2 +1,1 @@
-# TicTacToe
-A TicTacToe game using TableTop.JS 
+# This is an example building TicTacToe with [TableTop.JS](http://github.com/andrewjmeier/TableTop.JS)
