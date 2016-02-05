@@ -1,0 +1,31 @@
+{
+  "name": "TicTacToe",
+  "version": "1.0.0",
+  "description": "A board game using TableTop.JS",
+  "main": "index.js",
+  "scripts": {
+    "test": "make test",
+    "webpack": "webpack --watch",
+    "test-coverage": "./node_modules/istanbul/lib/cli.js cover ./node_modules/mocha/bin/_mocha -- --ui bdd -R spec -t 5000 \n open coverage/lcov-report/index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JamesEVerhagen/TicTacToe.git"
+  },
+  "author": "James Verhagen <youremail@email.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/your-github-user-name/your-project-name/issues"
+  },
+  "homepage": "https://github.com/JamesEVerhagen/TicTacToe#readme",
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "css-loader": "^0.23.1",
+    "istanbul": "^0.4.0",
+    "mocha": "^2.3.3",
+    "style-loader": "^0.13.0"
+  },
+  "dependencies": {
+    "tabletop-boardgames": "1.0.15"
+  }
+}
