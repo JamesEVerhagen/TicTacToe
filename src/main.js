@@ -8,6 +8,7 @@ var TicTacToeView = require("./tictactoe_view.js");
 
 // create the Board, Game, and TurnMap
 var board = new TicTacToeBoard();
+
 var game = new TicTacToeGame(board);
 
 var view = new TicTacToeView(game);
@@ -24,3 +25,5 @@ game.setTurnMap(turnMap);
 
 // gets the ball rolling!
 game.updateState("start");
+
+console.log('hey');
