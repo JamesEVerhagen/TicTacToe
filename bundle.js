@@ -51,12 +51,13 @@
 	var TicTacToeGame = __webpack_require__(37);
 	var TicTacToeBoard = __webpack_require__(38);
 	var TicTacToeView = __webpack_require__(39);
+	var TicTacToeAI = __webpack_require__(40)
 
 	// create the Board, Game, and TurnMap
 	var board = new TicTacToeBoard();
 	var game = new TicTacToeGame(board);
-
 	var view = new TicTacToeView(game);
+	var AI = new TicTacToeAI(game);
 
 	//create our startView
 	var startView = new TableTop.StartView(game); 
@@ -1484,12 +1485,13 @@
 	var inherits = __webpack_require__(4).inherits;
 
 	function ManualTurn(game, startView, view, gameOverView, nextPlayerView) { 
-	  
 	  this.game = game;
 	  this.startView = startView;
 	  this.view = view;
 	  this.nextPlayerView = nextPlayerView;
 	  this.gameOverView = gameOverView;
+	  var turn = 0; // 0 is User, 1 is AI
+	  var difficulty = 0; // 0 is novice, 1 is expert
 
 	  this.turnMap = new Turn({ 
 	    initialize: function( options ) {},
@@ -1522,7 +1524,27 @@
 	          } else {
 	            this.transition("waitingForMove");
 	          }
-	        } 
+	        },
+	        playAInovice : function() {
+	          difficulty = 0;
+	          startView.removeView();
+	          if(game.showNextPlayerScreen){
+	            this.transition("nextPlayerScreen");
+	          } 
+	          else {
+	            this.transition("waitingForMove");
+	          }
+	        },
+	        playAIexpert : function() {
+	          difficulty = 1;
+	          startView.removeView();
+	          if(game.showNextPlayerScreen){
+	            this.transition("nextPlayerScreen");
+	          } 
+	          else {
+	            this.transition("waitingForMove");
+	          }
+	        }
 	      },
 
 	      // 1b
@@ -1532,7 +1554,6 @@
 	        },
 	        goToTurn : function() { 
 	          nextPlayerView.removeView();
-	          this.transition("waitingForMove");
 	        } 
 	      },
 
@@ -1553,18 +1574,51 @@
 	        } 
 	      },
 
+	      // 2 
+	      waitingForMoveAI: { 
+	        _onEnter: function() { 
+	          view.drawView();
+	          console.log("Waiting for AI to make an action.");
+	          if (difficulty == 0){
+	            game.executeMoveAInovice();
+	            this.transition("postTurn");
+	          }
+	          else{
+	            console.log("AIexpert!!");
+	            game.executeMoveAIexpert();
+	            this.transition("postTurn");
+	          }
+	        }
+	      },
+
 	      // 3
 	      postTurn: { 
 	        _onEnter : function() { 
 	          if (this.game.playerDidWin(game.getCurrentPlayer())) { 
 	            view.removeView();
 	            this.transition("gameOver");
-	          } else { 
+	          }
+	          else if (this.game.playerDraw()){
+	            view.removeView();
+	            this.transition("gameDraw");
+	          }
+	          else {
 	            this.game.nextPlayer();
+	            console.log("turn value is: " + turn);
+	            if(turn == 0){
+	              turn = 1;
+	              this.transition("waitingForMoveAI");
+	            }
+	            else {
+	              turn = 0;
+	              this.transition("waitingForMove");
+	            }
 	            if(game.showNextPlayerScreen){
 	              view.hideView();
 	              this.transition("nextPlayerScreen");
-	            } else {
+	            } 
+	            
+	            else {
 	              this.transition("waitingForMove");
 	            }
 	          }
@@ -1577,7 +1631,15 @@
 	          gameOverView.drawView();
 	          console.log(this.game.getCurrentPlayer().name + " has won.");
 	        }
-	      } 
+	      },
+
+	      // 5
+	      gameDraw : { 
+	        _onEnter : function() { 
+	          gameOverView.drawDrawView();
+	          console.log("Draw!");
+	        }
+	      }  
 	    } 
 	  });  
 	} 
@@ -14637,11 +14699,27 @@
 	};
 
 	/**
+	 * draws the game over view
+	 * @returns {void}
+	*/
+	GameOverView.prototype.drawDrawView = function() {
+	  this.setupPage2();
+	};
+	/**
 	 * sets up the pageto take in the provided HTML text string
 	 * @returns {void}
 	*/
 	GameOverView.prototype.setupPage = function() {
 	  document.getElementById('div1').innerHTML = this.getHTMLText();
+	  var context = this;
+	};
+
+	/**
+	 * sets up the pageto take in the provided HTML text string
+	 * @returns {void}
+	*/
+	GameOverView.prototype.setupPage2 = function() {
+	  document.getElementById('div1').innerHTML = this.getHTMLText2();
 	  var context = this;
 	};
 
@@ -14652,6 +14730,18 @@
 	GameOverView.prototype.getHTMLText= function() {
 	  var htmlText = ' <form id="form1">'+
 	    this.game.getCurrentPlayer().name + ' has won!\
+	    </form> ';
+
+	  return htmlText;
+
+	};
+
+	/**
+	 * provides the htmlText to be place in a div on the page
+	 * @returns {string} htmlText
+	*/
+	GameOverView.prototype.getHTMLText2= function() {
+	  var htmlText = ' <form id="form1">'+ ' Draw!\
 	    </form> ';
 
 	  return htmlText;
@@ -14887,6 +14977,8 @@
 	  document.getElementById('div1').innerHTML = this.getHTMLText(beginningNumPlayers);
 	  var context = this;
 	  document.getElementById('btnEnter').onclick=function(){context.handleButtonClick()};
+	  document.getElementById('btnAInovice').onclick=function(){context.handleButtonClickAInovice()};
+	  document.getElementById('btnAIexpert').onclick=function(){context.handleButtonClickAIexpert()};
 	  document.getElementById('numPlayersInput').onchange=function(){context.handleNumChanged()};
 
 	};
@@ -14906,9 +14998,12 @@
 	    htmlText = htmlText + 'Player ' + (i+1) + ' Name: \
 	    <input type="text" id="player' + (i+1) + 'Name"><br>';
 	  }
-	  //adding enter button
-	  htmlText = htmlText + '<input type="button" id="btnEnter" value="Enter">\
-	    </form> ';
+	  //adding enter button and AI button
+	  htmlText = htmlText + 
+	  '<input type="button" class="inline" id="btnEnter" value="Enter">'
+	  + '<input type="button" class="inline" id="btnAInovice" value="AI Novice">'
+	  + '<input type="button" class="inline" id="btnAIexpert" value="AI Expert">';
+
 	  return htmlText;
 	};
 
@@ -14977,6 +15072,32 @@
 
 	  this.game.setPlayers(players);
 	  this.game.updateState("play");
+	};
+
+	/**
+	 * Handles the onclick for the button by creating a player and AI
+	 * @returns {void}
+	*/
+	StartView.prototype.handleButtonClickAInovice = function() {
+	  var players = [];
+	  players[0] = new Player ("User", this.game.playerColors[0]);
+	  players[1] = new Player ("AI", this.game.playerColors[1]);
+
+	  this.game.setPlayers(players);
+	  this.game.updateState("playAInovice");
+	};
+
+	/**
+	 * Handles the onclick for the button by creating a player and AI
+	 * @returns {void}
+	*/
+	StartView.prototype.handleButtonClickAIexpert = function() {
+	  var players = [];
+	  players[0] = new Player ("User", this.game.playerColors[0]);
+	  players[1] = new Player ("AI", this.game.playerColors[1]);
+
+	  this.game.setPlayers(players);
+	  this.game.updateState("playAIexpert");
 	};
 
 	/**
@@ -43533,6 +43654,116 @@
 	  return false;
 	};
 
+	/*
+	  Given the current state of the game, did they draw?
+	*/
+	TicTacToeGame.prototype.playerDraw = function() {
+	  
+	  //check if draw
+	  if(this.board.tiles[0][0].occupier != null && this.board.tiles[0][1].occupier != null && this.board.tiles[0][2].occupier != null &&
+	     this.board.tiles[1][0].occupier != null && this.board.tiles[1][1].occupier != null && this.board.tiles[1][2].occupier != null &&
+	     this.board.tiles[2][0].occupier != null && this.board.tiles[2][1].occupier != null && this.board.tiles[2][2].occupier != null){
+	     return true;
+	  }
+
+	  return false;
+	};
+
+	/*
+	  Given the current state of the game, return the cells that are empty
+	*/
+
+	TicTacToeGame.prototype.returnEmptyCells = function() {
+
+	  var emptyCells = new Array();
+	  
+	  //check if draw
+	  if(this.board.tiles[0][0].occupier == null){
+	    emptyCells.push(this.board.tiles[0][0]);
+	  }
+
+	  //check if draw
+	  if(this.board.tiles[0][1].occupier == null){
+	    emptyCells.push(this.board.tiles[0][1]);
+	  }
+
+	  //check if draw
+	  if(this.board.tiles[0][2].occupier == null ){
+	    emptyCells.push(this.board.tiles[0][2]);
+	  }
+
+	  //check if draw
+	  if(this.board.tiles[1][0].occupier == null ){
+	    emptyCells.push(this.board.tiles[1][0]);
+	  }
+
+	  //check if draw
+	  if(this.board.tiles[1][1].occupier == null ){
+	    emptyCells.push(this.board.tiles[1][1]);
+	  }
+
+	  //check if draw
+	  if(this.board.tiles[1][2].occupier == null ){
+	    emptyCells.push(this.board.tiles[1][2]);
+	  }
+
+	  //check if draw
+	  if(this.board.tiles[2][0].occupier == null ){
+	    emptyCells.push(this.board.tiles[2][0]);
+	  }
+
+	  //check if draw
+	  if(this.board.tiles[2][1].occupier == null ){
+	    emptyCells.push(this.board.tiles[2][1]);
+	  }
+
+	  //check if draw
+	  if(this.board.tiles[2][2].occupier == null ){
+	    emptyCells.push(this.board.tiles[2][2]);
+	  }
+	  return emptyCells;
+	};
+
+	/*
+	  Make the move! Move the token from the previous tile to the new tile
+	*/
+	TicTacToeGame.prototype.executeMoveAInovice = function() {
+	  var available = this.returnEmptyCells();
+	  var randomCell = available[Math.floor(Math.random() * available.length)];
+	  var newPosition = this.board.getTilePosition(randomCell);
+	  var tile = this.board.tiles[newPosition.x][newPosition.y];
+	  var token = new TableTop.Token(this.getCurrentPlayer(), tile, this.getCurrentPlayer().color);
+	  this.board.buildTokenForTile(token, tile);
+	  this.getCurrentPlayer().tokens.push(tile.occupier);
+	  this.proposedMove = {};
+	};
+
+	/*
+	  Make the move! Move the token from the previous tile to the new tile
+	*/
+	TicTacToeGame.prototype.executeMoveAIexpert = function() {
+	  var available = this.returnEmptyCells();
+	  var preferredMoves = new Array (this.board.tiles[1][1], this.board.tiles[0][0], this.board.tiles[0][2], this.board.tiles[2][0], 
+	    this.board.tiles[2][2], this.board.tiles[0][1], this.board.tiles[1][0], this.board.tiles[1][2], this.board.tiles[2][1]);
+	  var nextMove = null;
+	  loop1:
+	  for (var x = 0; x < 9; x++){
+	    loop2:
+	    for (var y = 0; y < 9; y++){
+	      if (available[y] == preferredMoves[x]){
+	          nextMove = preferredMoves[x];
+	          break loop1;
+	      }
+	    }
+	  }
+
+	  var newPosition = this.board.getTilePosition(nextMove);
+	  var tile = this.board.tiles[newPosition.x][newPosition.y];
+	  var token = new TableTop.Token(this.getCurrentPlayer(), tile, this.getCurrentPlayer().color);
+	  this.board.buildTokenForTile(token, tile);
+	  this.getCurrentPlayer().tokens.push(tile.occupier);
+	  this.proposedMove = {};
+	};
 
 	module.exports = TicTacToeGame;
 
@@ -43554,7 +43785,7 @@
 	  What tiles does your game board have? What colors are they?
 	*/
 	TicTacToeBoard.prototype.buildTiles = function() {
-	  var tileColor = 0xAAAAAA;
+	  var tileColor = 0x39e600;
 	  var tile;
 	  for (var y = 0; y < this.height; y++) {
 	    for (var x = 0; x < this.width; x++) {
@@ -43604,6 +43835,31 @@
 	};
 
 	module.exports = TicTacToeView;
+
+/***/ },
+/* 40 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var TableTop = __webpack_require__(1);
+	var inherits = __webpack_require__(4).inherits;
+
+	function TicTacToeAI(name, color, game) {
+	  Component.call(this);
+	  this.name = name;
+	  this.color = color;
+	  this.game = game;
+	}
+
+	inherits(TicTacToeAI, TableTop.Component);
+
+
+	TicTacToeAI.prototype.makeAIAction = function(position) {
+	    var available = this.game.emptyCells();
+	    var randomCell = available[Math.floor(Math.random() * available.length)];
+	    console.Log("randomCell chosen is: " + randomCell);
+	}
+
+	module.exports = TicTacToeAI;
 
 /***/ }
 /******/ ]);

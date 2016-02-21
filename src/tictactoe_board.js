@@ -12,7 +12,7 @@ inherits(TicTacToeBoard, TableTop.GridBoard);
   What tiles does your game board have? What colors are they?
 */
 TicTacToeBoard.prototype.buildTiles = function() {
-  var tileColor = 0xAAAAAA;
+  var tileColor = 0x39e600;
   var tile;
   for (var y = 0; y < this.height; y++) {
     for (var x = 0; x < this.width; x++) {
